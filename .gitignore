@@ -1,0 +1,15 @@
+# Edições geradas (HTML e imagens)
+edicoes/
+
+# Cache da coleta de feeds e JSON editorial
+.cache/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Configurações locais do Claude Code
+.claude/settings.local.json
