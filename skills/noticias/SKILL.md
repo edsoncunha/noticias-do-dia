@@ -18,17 +18,17 @@ Os dados ficam fora da skill, em `$NOTICIAS_DIR` (padrão: `~/noticias`): ediç�
 python3 scripts/noticias.py fetch
 ```
 
-Baixa os feeds de `feeds.json`, mantém o que foi publicado nas últimas 24 horas (use `--hours N` se o usuário pedir outra janela), remove duplicatas e descarta, por URL e palavras-chave, conteúdo patrocinado, futebol, celebridades, loterias e horóscopo. Mortes de personalidades passam pelo filtro.
+Toda a coleta é feita pelo script, sem gastar tokens: ele baixa os feeds de `feeds.json` (com retentativas e troca de User-Agent), mantém o que foi publicado nas últimas 24 horas (use `--hours N` se o usuário pedir outra janela), remove duplicatas, descarta conteúdo patrocinado, futebol, celebridades, loterias e horóscopo, agrupa as manchetes por assunto e baixa o texto das matérias dos 5 assuntos mais cobertos em cada seção. Mortes de personalidades passam pelo filtro.
 
-O comando imprime estatísticas, feeds com falha e os termos citados pelo maior número de veículos distintos. O índice completo de manchetes (`id | hora | título`, agrupado por veículo) fica em `.cache/digest.txt` (o comando imprime o caminho e o número de linhas). Leia o índice inteiro, em partes de até 500 linhas se a sua ferramenta de leitura tiver limite, até a última linha, antes de decidir a pauta.
+O comando imprime estatísticas, feeds com falha e o caminho da pauta, `.cache/pauta.md`. **Leia a pauta inteira, de uma vez.** Ela lista os assuntos cobertos por 2 ou mais veículos, do mais ao menos coberto, com IDs de grupo (`B1`, `B2`… para Brasil; `M1`… para Mundo) e de matéria. Não leia o índice completo `.cache/digest.txt`; ele existe só para procurar um assunto que você saiba ter ficado de fora.
 
 ## 2. Definir a pauta
 
 Para cada seção, **Brasil** e **Mundo**:
 
-- **Assunto do dia**: o tema coberto pelo maior número de veículos distintos e com maior relevância pública. Os termos mais citados ajudam, mas a decisão é editorial: prefira fatos com consequência (decisões de governo, Congresso, Justiça, economia, eleições, conflitos, desastres) a temas que só repercutem.
+- **Assunto do dia**: o tema coberto pelo maior número de veículos distintos e com maior relevância pública. A ordem da pauta ajuda, mas a decisão é editorial: prefira fatos com consequência (decisões de governo, Congresso, Justiça, economia, eleições, conflitos, desastres) a temas que só repercutem.
 - **Outras notícias**: de 6 a 10 no Brasil e de 5 a 8 no Mundo, cobrindo áreas diferentes (política, economia, sociedade, ciência, saúde, meio ambiente, cultura).
-- Itens marcados com `[M]` vêm de feeds de internacional, mas classifique pelo conteúdo: um fato no exterior vai para Mundo, mesmo que tenha saído em feed geral.
+- A divisão da pauta entre Brasil e Mundo é automática (pela proporção de matérias de feeds de internacional, marcadas com `[M]`). Classifique pelo conteúdo: um fato no exterior vai para Mundo, mesmo que o grupo seja `B`, e a reação brasileira a ele pode ficar no Brasil.
 
 ### Critérios de exclusão
 
@@ -42,28 +42,24 @@ O filtro automático é grosseiro. Aplique também estes critérios, que são do
 
 ## 3. Apurar os ângulos
 
-Para o assunto do dia de cada seção, escolha de 8 a 14 matérias de veículos diferentes e leia o texto delas:
+Para o assunto do dia das duas seções, leia os dossiês numa única chamada:
 
 ```sh
-python3 scripts/noticias.py show 137 246 263 --chars 1800
+python3 scripts/noticias.py dossie B1 M2
 ```
 
-Peça no máximo 8 matérias por chamada com `--chars 1800`. Acima disso, a saída passa do limite do terminal e é desviada para um arquivo.
+O dossiê sai do cache, sem rede, e já vem processado: primeiro os **fatos repetidos** entre veículos (cada um uma vez só, com o número de veículos que o trazem), que são a base do resumo; depois, para cada veículo, **só as frases que nenhum outro veículo publicou**, que são a matéria-prima dos quadros de ângulos. Se o assunto escolhido não tiver `*` na pauta, o `dossie` baixa as matérias na hora. Se dois grupos tratam do mesmo fato, peça os dois.
 
-Para as outras notícias, use `--feed`, que mostra só título, link e resumo do feed, sem baixar a página. Dá para pedir umas 30 de uma vez. Baixe o texto completo apenas quando o resumo não bastar para escrever com segurança.
+Para as outras notícias, o resumo e as manchetes da pauta costumam bastar. Quando não bastarem, peça um dossiê curto, juntando vários grupos na mesma chamada: `dossie B8 B12 M4 --chars 300 --shared 4`. Evite o `show`, que imprime o texto inteiro; use-o só para uma matéria fora dos grupos (`show ID --chars 1200`, ou `show --feed ID` para ver só o resumo do feed).
 
-```sh
-python3 scripts/noticias.py show --feed 476 272 805 972 470
-```
-
-Na escolha, cubra o espectro editorial e não só a imprensa tradicional. Como referência aproximada:
+Na escolha dos quadros, cubra o espectro editorial e não só a imprensa tradicional. Como referência aproximada:
 
 - Grande imprensa e agências: g1, O Globo, Folha de S.Paulo, Estadão, UOL, CNN Brasil, BBC News Brasil, Valor Econômico, Poder360, Metrópoles, Agência Brasil.
 - Linha mais à direita: Gazeta do Povo, Revista Oeste, Jovem Pan.
 - Linha mais à esquerda: CartaCapital, Brasil de Fato, Revista Fórum, The Intercept Brasil.
 - Análise e investigação: Nexo, Revista Piauí, Agência Pública, JOTA (Justiça), Brazil Journal (negócios).
 
-Ao comparar os textos, monte os quadros de ângulos. Cada quadro mostra só o nome do veículo e **uma linha** com link para a matéria. O leitor clica se quiser ler mais.
+Monte os quadros de ângulos a partir dos trechos exclusivos do dossiê. Cada quadro mostra só o nome do veículo e **uma linha** com link para a matéria. O leitor clica se quiser ler mais.
 
 - Um quadro só entra se trouxer informação nova: um dado, um documento, uma fala, um bastidor, uma consequência, uma crítica ou um enquadramento diferente.
 - Nova significa ausente do resumo do assunto **e** de todos os outros quadros. Antes de gravar o JSON, compare os quadros entre si e com o resumo, e elimine qualquer repetição.
@@ -106,7 +102,7 @@ Grave o JSON editorial em `.cache/edicao.json`, no caminho que o `fetch` imprimi
         {
           "title": "Título da notícia",
           "summary": "Duas ou três frases.",
-          "sources": [{"id": 274}, {"id": 402}],
+          "cluster": "B7",
           "angles": []
         }
       ]
@@ -117,17 +113,15 @@ Grave o JSON editorial em `.cache/edicao.json`, no caminho que o `fetch` imprimi
 }
 ```
 
-- Referencie matérias pelo `id` do índice. O `render` busca no cache o link, o nome do veículo e a manchete original. Só informe `link`, `source`/`name` e `headline` à mão para algo que não está no cache, e nunca construa URLs.
-- Em `stories`, liste em `sources` os veículos que cobriram o fato (até 4), começando pelo mais completo e evitando repetir o mesmo veículo. `angles` é opcional; uma notícia com ângulos ocupa a largura toda da página.
-- Não rode `fetch` de novo entre a apuração e o `render`. A coleta renumera os IDs, e o JSON editorial passaria a apontar para outras matérias.
+- Referencie matérias pelo `id` da pauta ou do dossiê. O `render` busca no cache o link, o nome do veículo e a manchete original. Só informe `link`, `source`/`name` e `headline` à mão para algo que não está no cache, e nunca construa URLs.
+- Em `stories`, informe o grupo da pauta em `cluster`: o `render` lista sozinho até 4 veículos do grupo, do texto mais completo ao menos. Use `"sources": [{"id": 274}, {"id": 402}]` no lugar de `cluster` só quando o grupo misturar assuntos ou a notícia juntar grupos. `angles` é opcional; uma notícia com ângulos ocupa a largura toda da página.
+- Não rode `fetch` de novo entre a apuração e o `render`. A coleta renumera os IDs de matéria e de grupo, e o JSON editorial passaria a apontar para outras matérias.
 
 ### Imagens
 
-Cada assunto ganha uma imagem automaticamente. O `render` percorre as matérias citadas no bloco, na ordem `image_id`, `angles` e `sources`. Para cada uma, tenta a `og:image` da página e depois a imagem do feed. A primeira que puder ser baixada e não se repetir na edição é salva em `edicoes/img/AAAA-MM-DD/`, dentro da pasta de dados, com crédito "Reprodução/Veículo".
+Cada assunto ganha uma imagem automaticamente: o `render` percorre as matérias citadas no bloco (`image_id`, `angles`, `sources`) e usa a primeira `og:image` ou imagem do feed que puder ser baixada e não se repetir na edição, com crédito "Reprodução/Veículo". Para controlar um bloco (`highlight` ou item de `stories`):
 
-Para controlar a escolha em um bloco (`highlight` ou item de `stories`):
-
-- `"image_id": 325` usa primeiro a imagem dessa matéria. Prefira fotos informativas, como o local, as pessoas envolvidas ou um dado, a ilustrações genéricas.
+- `"image_id": 325` usa primeiro a imagem dessa matéria. Prefira fotos informativas a ilustrações genéricas.
 - `"image": false` deixa o bloco sem imagem. Use quando as opções forem violentas, sensacionalistas ou apenas um logotipo.
 - `"image": {"url": "https://...", "caption": "Legenda", "credit": "Autor/Agência"}` define a imagem à mão.
 
@@ -137,9 +131,7 @@ Gere o HTML e abra no navegador padrão:
 python3 scripts/noticias.py render --open
 ```
 
-Sem argumentos, o `render` lê o `.cache/edicao.json` e imprime o caminho do arquivo gerado (`edicoes/AAAA-MM-DD.html`; uma nova edição no mesmo dia sobrescreve a anterior). O rodapé mostra, a partir do cache, quantas matérias e veículos serviram de base e quais feeds falharam. Use `--no-images` para gerar sem imagens, por exemplo sem internet.
-
-Confira se as imagens fazem sentido, e não só se existem: procure os créditos (`class="credit"`) no HTML gerado e, se o seu ambiente permitir, faça uma captura de tela da página. Corrija com `image_id` ou `"image": false` e renderize de novo. O visual segue o New York Times: logotipo em Playfair Display, manchetes em serifa (Source Serif 4), corpo em Georgia e rótulos em Libre Franklin, carregadas do Google Fonts.
+Sem argumentos, o `render` lê o `.cache/edicao.json` e grava `edicoes/AAAA-MM-DD.html` (uma nova edição no mesmo dia sobrescreve a anterior). Ele imprime uma linha por bloco com o crédito e a legenda da imagem, ou a manchete da matéria de onde ela veio. Confira por esse texto se a imagem combina com o assunto (não faça captura de tela) e, se não combinar, corrija com `image_id` ou `"image": false` e renderize de novo. Use `--no-images` para gerar sem imagens, por exemplo sem internet.
 
 ## 5. Responder
 
@@ -149,4 +141,6 @@ No chat, responda em poucas linhas: o caminho da edição, o assunto do dia no B
 
 - Para adicionar ou remover fontes, edite `feeds.json` (`source`, `url` e, opcionalmente, `"hint": "mundo"` para feeds de internacional).
 - Os filtros automáticos ficam no topo de `scripts/noticias.py` (`SPONSORED`, `FOOTBALL_*`, `CELEB_*`, `NOISE`).
+- O cliente HTTP (perfis de navegador, retentativas, fallback para o curl) fica em `scripts/net.py`; o agrupamento por assunto e a separação de trechos comuns e exclusivos, em `scripts/topics.py`.
+- `fetch --deep N` muda quantos assuntos por seção têm as matérias baixadas; `--min-sources N`, quantos veículos um assunto precisa ter para entrar na pauta.
 - A lista de feeds verificados, incluindo os que não funcionam, está em `references/feeds.md`.

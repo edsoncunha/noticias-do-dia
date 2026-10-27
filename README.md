@@ -31,3 +31,11 @@ Agentes sem suporte a skills podem usar o `AGENTS.md` da raiz, abrindo o agente 
 Pergunte ao agente: **"quais as notícias?"**
 
 A edição é salva em `~/noticias/edicoes/AAAA-MM-DD.html` (no Windows, `%USERPROFILE%\noticias\edicoes\`) e aberta no navegador. Para usar outra pasta, defina a variável `NOTICIAS_DIR`.
+
+## Como a skill economiza tokens
+
+A coleta é toda feita por scripts locais em `skills/noticias/scripts/`, e o modelo só entra para escrever a edição:
+
+- `net.py` baixa feeds e páginas com retentativas, backoff exponencial, troca de perfil de navegador (User-Agent e cabeçalhos coerentes com ele), detecção de páginas anti-robô e fallback para o `curl`.
+- `topics.py` agrupa as manchetes por assunto e separa, no texto das matérias, os fatos que vários veículos repetem do que cada um traz de exclusivo.
+- `noticias.py fetch` grava uma pauta compacta com os assuntos agrupados e já baixa as matérias dos assuntos mais cobertos. O modelo lê a pauta, pede o dossiê dos assuntos do dia (`noticias.py dossie B1 M1`, que sai do cache) e grava o JSON editorial que o `render` transforma em HTML.
