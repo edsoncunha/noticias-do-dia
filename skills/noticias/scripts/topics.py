@@ -72,7 +72,7 @@ def _cos(a, b):
     return sum(x * b.get(t, 0.0) for t, x in a.items())
 
 
-def cluster(items, threshold=0.33):
+def cluster(items, threshold=0.33, merge_threshold=0.38):
     """Agrupamento em estrela: a manchete com mais vizinhas vira centro e leva as parecidas com ela.
 
     Diferente de componentes conexos, não encadeia assuntos distintos que só compartilham um nome
@@ -123,14 +123,50 @@ def cluster(items, threshold=0.33):
             rest.append([i])
         else:
             multi[best].append(i)
-    return multi + rest
+    return _merge(multi, vecs, merge_threshold) + rest
+
+
+def _merge(groups, vecs, threshold):
+    """Junta grupos do mesmo fato que a estrela separou (a fuga de alguém em duas manchetes diferentes).
+
+    O limiar é mais alto que o do agrupamento: com 0,37 já se juntam assuntos distintos da mesma eleição.
+    """
+    cents = []
+    for g in groups:
+        c = defaultdict(float)
+        for j in g:
+            for t, x in vecs[j].items():
+                c[t] += x
+        n = math.sqrt(sum(x * x for x in c.values())) or 1.0
+        cents.append({t: x / n for t, x in c.items()})
+    parent = list(range(len(groups)))
+
+    def root(k):
+        while parent[k] != k:
+            parent[k] = parent[parent[k]]
+            k = parent[k]
+        return k
+
+    for a in range(len(groups)):
+        for b in range(a + 1, len(groups)):
+            if _cos(cents[a], cents[b]) >= threshold:
+                parent[root(b)] = root(a)
+    merged = defaultdict(list)
+    for k, g in enumerate(groups):  # o grupo maior vem antes, então seu centro continua na frente
+        merged[root(k)].extend(g)
+    return list(merged.values())
 
 
 # --- Trechos comuns e exclusivos -------------------------------------------------
 
+# Restos de página que o articleBody às vezes traz: legenda de vídeo, crédito, chamadas.
+JUNK = re.compile(r"(Crédito:|Edição:|Foto:|Imagem:|Leia (também|mais)|Assine|newsletter|Siga o|Clique aqui|"
+                  r"Veja (também|o vídeo)|Ouça|Inscreva-se|WhatsApp|Telegram)", re.I)
+
+
 def sentences(text):
     parts = re.split(r"(?<=[.!?])\s+(?=[A-ZÀ-Ú\"“])", text)
-    return [p.strip() for p in parts if len(p.strip()) > 25]
+    return [p.strip() for p in parts if len(p.strip()) > 25 and not JUNK.search(p)]
 
 
 def _shingles(sentence, k=4):
