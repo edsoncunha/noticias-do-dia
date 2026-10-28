@@ -64,6 +64,34 @@ Todos os links abaixo foram testados em 2026-10-16 e devolveram RSS/Atom válido
 | Brasil de Fato | https://www.brasildefato.com.br/feed/ |
 | JOTA | https://www.jota.info/feed |
 
+## Investigação, análise e ciência (Em profundidade)
+
+Testados em 2026-10-28. Em `feeds.json`, levam `"perfil"` e alimentam a seção Em profundidade com matérias de até 7 dias. Agência Pública, Piauí, Intercept, Nexo, JOTA e Brazil Journal, listados acima, também têm `perfil`.
+
+| Portal | Perfil | Feed |
+|---|---|---|
+| Folha de S.Paulo (Ilustríssima) | análise | https://feeds.folha.uol.com.br/ilustrissima/rss091.xml |
+| Gazeta do Povo (Ideias) | análise | https://www.gazetadopovo.com.br/feed/rss/ideias.xml |
+| Revista Crusoé | análise | https://crusoe.com.br/feed/ |
+| Le Monde Diplomatique Brasil | análise | https://diplomatique.org.br/feed/ |
+| Outras Palavras | análise | https://outraspalavras.net/feed/ |
+| The Conversation Brasil | análise | https://theconversation.com/br/articles.atom |
+| Repórter Brasil | investigação | https://reporterbrasil.org.br/feed/ |
+| O Joio e o Trigo | investigação | https://ojoioeotrigo.com.br/feed/ |
+| Ponte | investigação | https://ponte.org/feed/ |
+| Marco Zero Conteúdo | investigação | https://marcozero.org/feed/ |
+| Sumaúma | investigação | https://sumauma.com/feed/ |
+| InfoAmazonia | investigação | https://infoamazonia.org/feed/ |
+| Amazônia Real | investigação | https://amazoniareal.com.br/feed/ |
+| ((o))eco | investigação | https://oeco.org.br/feed/ |
+| Mongabay Brasil | investigação | https://brasil.mongabay.com/feed/ |
+| Projeto Colabora | investigação | https://projetocolabora.com.br/feed/ |
+| Núcleo | investigação | https://nucleo.jor.br/feed/ |
+| Pesquisa FAPESP | ciência | https://revistapesquisa.fapesp.br/feed/ |
+| Agência Bori | ciência | https://abori.com.br/feed/ |
+
+Fora da lista: Aos Fatos e Agência Lupa (checagem do factual do dia, sem pauta fria).
+
 ## Economia e negócios
 
 | Portal | Feed |
@@ -108,3 +136,4 @@ Testados sem sucesso em 2026-10-16:
 - Band, GZH (Zero Hora), O Povo, Jornal do Commercio, Diário de Pernambuco, IstoÉ Dinheiro, Lance!, Conjur, Correio do Povo e Diário do Nordeste: retornam 404, 403, timeout ou HTML em vez de RSS.
 - CNN Brasil: o feed geral funciona, mas os de seção (`/politica/feed/`, `/economia/feed/`) retornam 404.
 - g1 Ciência e Saúde: inclui matérias de 2024 misturadas às atuais, por isso ficou fora da lista.
+- Em 2026-10-28: Gênero e Número e Data Fixers não devolvem itens; Fiquem Sabendo (site e newsletter) não publica desde agosto e outubro; Revista Questão de Ciência deixou de ser atualizada em junho de 2026.

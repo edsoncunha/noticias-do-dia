@@ -16,11 +16,14 @@ O `render` percorre as matérias citadas em cada bloco (`highlight` ou item de `
 - `show ID [ID ...] --chars 1200`: texto de matérias fora dos grupos da pauta. Imprime o texto inteiro, então prefira o `dossie`.
 - `show --feed ID [ID ...]`: só título, link e resumo do feed.
 - `.cache/digest.txt`: índice de todas as manchetes, por veículo, com o grupo de cada uma. Use para procurar um assunto que você saiba ter ficado de fora da pauta, com `grep`, e não para ler inteiro.
+- `fetch --fundo N`: candidatas a Em profundidade listadas na pauta (padrão 20). `--fundo-days N`: idade máxima delas (padrão 7).
+- `leitura ID ... --chars N --method N`: início do texto (padrão 1200 caracteres) e frases sobre método (padrão 3) das candidatas a Em profundidade.
 - `fetch --deep N`: assuntos por seção com as matérias baixadas (padrão 5). `--min-sources N`: veículos para um assunto entrar na pauta (padrão 2). `--max-pairs N`: assuntos com só 2 veículos listados por seção (padrão 15). `--reuse-hours N`: idade máxima da edição reaproveitada (padrão 3; 0 desliga).
 
 ## Manutenção
 
-- Fontes: edite `feeds.json` (`source`, `url` e, opcionalmente, `"hint": "mundo"` para feeds de internacional e `"linha": "direita"` ou `"esquerda"` para a linha editorial mostrada na pauta e priorizada nos dossiês).
+- Fontes: edite `feeds.json` (`source`, `url` e, opcionalmente, `"hint": "mundo"` para feeds de internacional, `"linha": "direita"` ou `"esquerda"` para a linha editorial mostrada na pauta e priorizada nos dossiês, e `"perfil": "investigacao"`, `"analise"`, `"ciencia"` ou `"dados"` para os feeds que alimentam Em profundidade).
+- Em profundidade: as candidatas vêm só dos feeds com `perfil`, de até 7 dias, e a ordem segue `score_fundo` em `scripts/noticias.py`. A ordem favorece, nesta sequência, a ligação com um assunto de 4 ou mais veículos, o texto longo e as frases de método (`METHOD`), e pune o factual (`HOT_TITLE`, `SHORT_URL`). `$NOTICIAS_DIR/publicadas.json` guarda o link de tudo o que já saiu numa edição; apagar uma linha libera a matéria de novo.
 - Filtros automáticos: topo de `scripts/noticias.py` (`SPONSORED`, `FOOTBALL_*`, `CELEB_*`, `NOISE`).
 - Cliente HTTP (perfis de navegador, retentativas, fallback para o `curl`): `scripts/net.py`.
 - Agrupamento por assunto e separação de trechos comuns e exclusivos: `scripts/topics.py`.

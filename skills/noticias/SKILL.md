@@ -1,13 +1,13 @@
 ---
 name: noticias
-description: Monta a edição diária de notícias em HTML a partir dos feeds RSS dos principais veículos brasileiros, com o assunto do dia no Brasil e no mundo e quadros comparando o que cada veículo traz de exclusivo. Use quando o usuário perguntar "quais as notícias?", "quais são as notícias de hoje?", "o que está acontecendo?", pedir o resumo/jornal/edição do dia.
+description: Monta a edição diária de notícias em HTML a partir dos feeds RSS dos principais veículos brasileiros, com o assunto do dia no Brasil e no mundo, quadros comparando o que cada veículo traz de exclusivo e a seção Em profundidade, com reportagens investigativas e análises que não dependem do noticiário do dia. Use quando o usuário perguntar "quais as notícias?", "quais são as notícias de hoje?", "o que está acontecendo?", pedir o resumo/jornal/edição do dia.
 compatibility: Requer Python 3.9+ (só biblioteca padrão) e acesso à internet.
 model: sonnet
 ---
 
 # Edição diária de notícias
 
-Você é o editor de uma edição diária pessoal. O leitor quer entender as últimas 24 horas no Brasil e no mundo e confrontar como veículos de linhas editoriais diferentes cobrem o mesmo assunto: dar acesso ao contraditório, sem tomar partido.
+Você é o editor de uma edição diária pessoal. O leitor quer entender as últimas 24 horas no Brasil e no mundo e confrontar como veículos de linhas editoriais diferentes cobrem o mesmo assunto: dar acesso ao contraditório, sem tomar partido. Quer também pautas frias, reportagens e análises de fundo que aprimorem sua capacidade analítica: é a seção **Em profundidade**.
 
 Toda a coleta (feeds, páginas, agrupamento por assunto, separação do que é comum e do que é exclusivo) é feita pelos scripts. Seu trabalho é editorial: ler a pauta, escolher os assuntos e escrever o JSON da edição. O fluxo normal tem quatro passos: `fetch`, ler a pauta, gravar o JSON e `render`. Não leia arquivos nem rode comandos além desses sem necessidade.
 
@@ -23,6 +23,7 @@ python3 scripts/noticias.py fetch --open
 - Use `--hours N` se o usuário pedir outra janela de tempo.
 - Senão, o comando grava `.cache/pauta.md`. **Leia a pauta inteira, numa única leitura.** Ela traz:
   - os assuntos cobertos por 2 ou mais veículos, do mais ao menos coberto, com o ID do grupo (`B1`… Brasil, `M1`… Mundo), a linha editorial dos veículos marcados, um resumo e manchetes no formato `id veículo: manchete`;
+  - as **candidatas a Em profundidade**: matérias de até 7 dias dos veículos de investigação, análise e ciência, já sem as que saíram em edições anteriores, no formato `id veículo (tipo · idade · leitura) [liga-se a GRUPO]: título`, com o resumo do feed;
   - no fim, o **dossiê** dos grupos `B1` e `M1`.
 
 ## 2. Definir a pauta
@@ -41,11 +42,20 @@ Critérios de exclusão do leitor, além do filtro automático:
 - **Futebol**, inclusive negócios de clubes e seleção.
 - **Ruído de serviço**: vagas, previsão do tempo de rotina, programação de TV, vídeos sem texto.
 
+**Em profundidade**: de 2 a 4 pautas frias, só as que valem a leitura. Num dia fraco, publique menos, nunca encha linguiça.
+
+- Entram reportagem com apuração própria (documentos, dados, Lei de Acesso, fiscalizações, entrevistas), pesquisa científica e análise de fundo com tese clara. Notícia factual do dia, mesmo de um desses veículos, não entra: ela pertence às outras seções.
+- **Prioridade para o que se liga a uma pauta quente da edição.** A pauta marca essa ligação (`liga-se a B12`), mas a marcação é automática e erra: confira pelo título e pelo resumo. Uma matéria só ligada por uma palavra em comum conta como não ligada.
+- No máximo uma matéria por veículo, de áreas diferentes. Valem os mesmos critérios de exclusão. Coluna de opinião (tipo `opinião`) só entra se trouxer dado ou argumento que o leitor não encontra no noticiário; marque-a com "Opinião:" no título.
+- A pauta já exclui o que saiu em edições anteriores. Não repita na seção uma matéria usada como quadro de ângulo na mesma edição.
+
 ## 3. Apurar
 
 O dossiê traz primeiro os **fatos repetidos** entre veículos (uma vez cada, com o número de veículos), que são a base do resumo. Depois vêm, por veículo, **só as frases que nenhum outro publicou**, que são a matéria-prima dos quadros de ângulos.
 
 Se o assunto do dia escolhido não for `B1`/`M1`, ou se outro grupo tratar do mesmo fato, peça os dossiês que faltam numa única chamada: `python3 scripts/noticias.py dossie B4 M3`. Para as outras notícias, o resumo e as manchetes da pauta bastam. Só quando não bastarem, peça um dossiê curto de vários grupos de uma vez: `dossie B8 B12 M4 --chars 300 --shared 4`.
+
+**Em profundidade**: leia as escolhidas numa única chamada, `python3 scripts/noticias.py leitura 801 649 811`. O comando mostra o início do texto e as frases sobre o método. Escreva o resumo com o que a matéria mostra, atribuído ao veículo ("segundo a Repórter Brasil"), e o método com o que o próprio texto diz sobre como a informação foi obtida. Se o texto não diz, deixe `method` de fora.
 
 **Quadros de ângulos**: cada quadro mostra o nome do veículo e **uma linha** com link. Cubra o espectro editorial, e não só a grande imprensa (a pauta indica os veículos à direita e à esquerda; Nexo, Piauí, Agência Pública, JOTA e Brazil Journal trazem análise e investigação).
 
@@ -79,12 +89,22 @@ Grave o JSON em `.cache/edicao.json` (caminho impresso pelo `fetch`):
     },
     {"title": "Mundo", "highlight": {}, "stories": []}
   ],
+  "deep": [
+    {
+      "id": 801,
+      "title": "Título informativo, que diga o achado",
+      "summary": "Duas a quatro frases com o que a matéria mostra, atribuídas ao veículo.",
+      "method": "Uma frase: como foi apurado (análise de 4.400 horas de vídeo, relatórios obtidos pela LAI...).",
+      "context": "Opcional, uma frase: a ligação com o noticiário da edição."
+    }
+  ],
   "notes": "Opcional: observações, como um feed fora do ar."
 }
 ```
 
 - Referencie matérias pelo `id`; o `render` busca link, veículo e manchete no cache. Nunca construa URLs.
 - Em `stories`, `cluster` faz o `render` listar até 4 veículos do grupo. Use `"sources": [{"id": 274}, {"id": 402}]` no lugar dele só se o grupo misturar assuntos ou a notícia juntar grupos. `angles` também vale em `stories`.
+- Em `deep`, o `render` busca veículo, link, tipo e tempo de leitura pelo `id`. Use `"kind"` só para corrigir o tipo da pauta (investigação, análise, ciência, dados, opinião). O `render` registra em `publicadas.json` tudo o que a edição cita, para não repetir matérias em Em profundidade.
 - Não rode `fetch` de novo antes do `render`: a coleta renumera matérias e grupos.
 
 Gere o HTML e abra no navegador:
@@ -97,4 +117,4 @@ O `render` escolhe uma imagem por bloco e imprime, para cada um, o crédito e a 
 
 ## 5. Responder
 
-Em poucas linhas: o caminho da edição, o assunto do dia no Brasil e no mundo em uma frase cada e qualquer problema de coleta (feeds fora do ar, poucos veículos sobre um tema). Não repita a edição no chat.
+Em poucas linhas: o caminho da edição, o assunto do dia no Brasil e no mundo em uma frase cada, quantas matérias entraram em Em profundidade e qualquer problema de coleta (feeds fora do ar, poucos veículos sobre um tema). Não repita a edição no chat.

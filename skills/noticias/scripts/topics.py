@@ -126,6 +126,30 @@ def cluster(items, threshold=0.33, merge_threshold=0.38):
     return _merge(multi, vecs, merge_threshold) + rest
 
 
+def relate(cands, groups, threshold=0.25):
+    """Para cada candidata, o grupo quente mais parecido: (id do grupo ou None, similaridade).
+
+    `groups` é uma lista de (id, matérias). O limiar é mais baixo que o do agrupamento porque uma
+    reportagem de fundo se liga ao assunto pelo tema, sem repetir a manchete.
+    """
+    pool = [it for _, members in groups for it in members]
+    vecs = _vectors(pool + cands)
+    cents, k = [], 0
+    for gid, members in groups:
+        c = defaultdict(float)
+        for v in vecs[k:k + len(members)]:
+            for t, x in v.items():
+                c[t] += x
+        k += len(members)
+        n = math.sqrt(sum(x * x for x in c.values())) or 1.0
+        cents.append((gid, {t: x / n for t, x in c.items()}))
+    out = []
+    for v in vecs[len(pool):]:
+        score, gid = max(((_cos(v, c), g) for g, c in cents), default=(0.0, None))
+        out.append((gid if score >= threshold else None, score))
+    return out
+
+
 def _merge(groups, vecs, threshold):
     """Junta grupos do mesmo fato que a estrela separou (a fuga de alguém em duas manchetes diferentes).
 
